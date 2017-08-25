@@ -61,6 +61,7 @@ function onStop() {
   if (detector && detector.isRunning) {
     detector.removeEventListener();
     detector.stop();  // stop detector
+    stopGame();
   }
 };
 
@@ -69,6 +70,7 @@ function onReset() {
   log('#logs', "Reset button pressed");
   if (detector && detector.isRunning) {
     detector.reset();
+    resetGame();
   }
   $('#results').html("");  // clear out results
   $("#logs").html("");  // clear out previous log
@@ -103,6 +105,7 @@ detector.addEventListener("onInitializeSuccess", function() {
 
   // TODO(optional): Call a function to initialize the game, if needed
   // <your code here>
+  initializeGame();
 });
 
 // Add a callback to receive the results from processing an image
@@ -134,6 +137,7 @@ detector.addEventListener("onImageResultsSuccess", function(faces, image, timest
 
     // TODO: Call your function to run the game (define it first!)
     // <your code here>
+    checkResult(faces[0].emojis.dominantEmoji);
   }
 });
 
@@ -181,6 +185,83 @@ function drawEmoji(canvas, img, face) {
 }
 
 // TODO: Define any variables and functions to implement the Mimic Me! game mechanics
+
+var targetEmoji;
+var score;
+var total;
+var resultModalTimer;
+
+function initializeGame() {
+  if (detector == null || !detector.isRunning) {
+    return;
+  }
+  if (resultModalTimer != null) {
+    resultModalTimer = null;
+  }
+
+  initializeScore();
+  setTimeout(function () {
+    targetEmoji = getRandomEmoji();
+    setTargetEmoji(targetEmoji);
+    total = 1;
+    setScore(score, total);
+
+    resultModalTimer = setTimeout(function () {
+      $('#myModal').modal('show');
+      $('#modal-result').html('Your score is ' + score + '/' + total);
+    }, 30000);
+
+  }, 5000);
+}
+
+function resetGame() {
+  if (detector == null || !detector.isRunning) {
+    return;
+  }
+  clearTargetEmoji();
+  initializeGame();
+}
+
+function stopGame() {
+  if (resultModalTimer != null) {
+    resultModalTimer = null;
+  }
+}
+
+function checkResult(emoji) {
+  if (toUnicode(emoji) == targetEmoji)  {
+    flash();
+    targetEmoji = '';
+    score ++;
+    total ++;
+    setScore(score, total);
+
+    setTimeout(function () {
+      targetEmoji = getRandomEmoji();
+      setTargetEmoji(targetEmoji);
+    }, 3000);
+  }
+}
+
+function flash(){
+    $("#camera").css("opacity", "0.1");
+    $("#camera").css("filter", "alpha(opacity=10)");
+    $("#camera").fadeTo("middle", 1.0);
+}
+
+function getRandomEmoji() {
+  return emojis[Math.floor(Math.random() * emojis.length)];
+}
+
+function clearTargetEmoji() {
+  $("#target").html("?");
+}
+
+function initializeScore() {
+  score = 0;
+  total = 0;
+  setScore(score, total);
+}
 
 // NOTE:
 // - Remember to call your update function from the "onImageResultsSuccess" event handler above
